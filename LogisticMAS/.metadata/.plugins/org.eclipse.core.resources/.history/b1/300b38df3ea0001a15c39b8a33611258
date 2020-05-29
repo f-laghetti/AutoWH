@@ -1,0 +1,74 @@
+package autoMag.utils;
+
+import java.util.ArrayList;
+
+import autoMag.space.Coord;
+
+public class Decoders {
+	
+	/*public static ArrayList<Coord> decodePath(String pathMsg){
+		ArrayList<Coord> path = new ArrayList<Coord>();
+		
+		String[] coordStr = pathMsg.split(", ");
+		String[] singleCoord;
+		for(String coord : coordStr) {
+			singleCoord = coord.split(":");
+			path.add(new Coord(Integer.parseInt(singleCoord[0]), Integer.parseInt(singleCoord[1])));
+		}
+		
+		return path;
+	}*/
+	
+	public static String[] decodeTransactorUpdate(String updateMsg){
+		String[] decodedMsg;
+		
+		decodedMsg = updateMsg.split("\\|");
+		
+		return decodedMsg;
+	}
+	
+	/*public static ArrayList<WorkOrder> decodePathsToShelves(String workOrderMsg, WorkOrderType type) {
+		ArrayList<WorkOrder> decodedMsg = new ArrayList<WorkOrder>();
+		String[] workOrder = workOrderMsg.split("\\|");
+		for(String str : workOrder) {
+			String[] splitWorkOrder = str.split("-");
+			String[] coordStr = splitWorkOrder[0].split(":");
+			String[] levelsStr = splitWorkOrder[1].split(", ");
+			Coord tmpCoord = new Coord(Integer.parseInt(coordStr[0]),Integer.parseInt(coordStr[1]));
+			ArrayList<Integer> tmpLevels = new ArrayList<Integer>();
+			for(String str2 : levelsStr) {
+				tmpLevels.add(Integer.parseInt(str2));
+			}
+			decodedMsg.add(new WorkOrder(type, tmpCoord, tmpLevels, decodePath(splitWorkOrder[2])));
+		}
+		return decodedMsg;
+	}*/
+	
+	public static ArrayList<WorkOrder> decodeTransporterUpdateStore(String workOrderMsg) {
+		ArrayList<WorkOrder> decodedMsg = new ArrayList<WorkOrder>();
+		String[] workOrder = workOrderMsg.split("\\|");
+		for(String str : workOrder) {
+			String[] splitWorkOrder = str.split("-");
+			String[] coordStr = splitWorkOrder[0].split(":");
+			String[] levelsStr = splitWorkOrder[1].split(", ");
+			Coord tmpCoord = new Coord(Integer.parseInt(coordStr[0]),Integer.parseInt(coordStr[1]));
+			ArrayList<Integer> tmpLevels = new ArrayList<Integer>();
+			for(String str2 : levelsStr) {
+				tmpLevels.add(Integer.parseInt(str2));
+			}
+			decodedMsg.add(new WorkOrder(WorkOrderType.TOSHELF, tmpCoord, tmpLevels, decodePath(splitWorkOrder[2])));
+		}
+		return decodedMsg;
+	}
+
+	//MANIPOLAZIONE STRINGHE
+	
+	
+	public static String removeBracket(String str) {
+		str = str.replace("[", "");
+		str = str.replace("]", "");
+		return str;
+	}
+	
+	
+}

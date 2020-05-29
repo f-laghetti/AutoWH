@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="true"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="svuotata"/>
+		<list key="findhistory">
+			<item value="svuotata"/>
+			<item value="EXECUTING UPDATE"/>
+			<item value="COLLECTION CONFIRMED"/>
+			<item value="STARTA"/>
+			<item value="BEFORE"/>
+			<item value="block()"/>
+			<item value="send"/>
+			<item value="setFree"/>
+			<item value="transactor"/>
+			<item value="for (String key : tmp_shelves.keySet()) {"/>
+		</list>
+		<list key="replacehistory">
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1131"/>
+		<item key="DIALOG_Y_ORIGIN" value="441"/>
+		<item key="DIALOG_WIDTH" value="348"/>
+		<item key="DIALOG_HEIGHT" value="437"/>
+		<item key="DIALOG_FONT_NAME" value="1|Ubuntu|11.0|0|GTK|1|"/>
+	</section>
+</section>

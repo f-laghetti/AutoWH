@@ -1,0 +1,17 @@
+1561673627751	Rename field 'transactionClosed'
+1561673706799	Rename field 'withdrawOpen'
+1561673741295	Rename field 'withdrawClosed'
+1561673778256	Rename field 'transactionOpen'
+1561673865353	Rename method 'reserveShelvesForWithdraw'
+1561673953394	Rename enum constant 'WITHDRAW'
+1561673987833	Rename enum constant 'COLLECT'
+1561674118551	Rename method 'requestWithdraw'
+1561674141747	Rename type 'WithdrawFromWarehouse'
+1561674228969	Rename local variable 'withdrawButton'
+1561674278328	Rename field 'mtWithdrawRequest'
+1561674324466	Rename field 'rqstWithdraw'
+1561674385563	Rename type 'WithdrawRequest'
+1561674400824	Rename field 'mtConfirmWithdraw'
+1561674428011	Rename local variable 'newWithdraw'
+1561712697262	Delete elements
+1561714896429	Delete element

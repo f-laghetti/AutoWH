@@ -1,0 +1,351 @@
+package autoMag.agents;
+
+import autoMag.space.Coord;
+import autoMag.utils.TransactorInfo;
+import jade.core.AID;
+import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+
+public class Transactor extends Agent{
+
+	//l'interfaccia del transactor
+	private TransactorGui myGui;
+	//il magazzino in cui si trova
+	AID warehouseAID;
+	//le informazioni relative al transactor
+	TransactorInfo info;
+	
+	public void setup() {
+		
+		//pause needed to wait for the Warehouse to go online
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		
+		myGui = new TransactorGui(this);
+		myGui.showGui();
+
+		System.out.print("\nNEW TRANSACTOR CREATED\nTransactor name:\n"+getAID().getName());
+		Object[] arg = getArguments();
+		if (arg != null && arg.length == 3) {
+			String newId = (String) arg[0];//prende in ingresso il proprio id
+			System.out.println(" ID: "+newId);
+			String warehouseName = (String) arg[1];//prende in ingresso il magazzino in cui � stato inserito
+			System.out.println("Warehouse name:\n"+warehouseName);
+			String sectorId = (String) arg[2];
+			Coord newCoord = new Coord(sectorId);
+			info = new TransactorInfo(newId, newCoord);
+			addBehaviour(new AddToWarehouse(warehouseName));
+		}
+		else{
+			System.out.println("Invalid arguments number.");
+			doDelete();
+		}
+		
+	}
+	
+	protected void deliveryRequest(int code, int quantity) {
+		addBehaviour(new CheckDelivery(code, quantity));
+	}
+	
+	//BEHAVIOUR
+
+	private class CheckDelivery extends Behaviour{
+		
+		private int code;
+		private int deliveredQuantity;
+		MessageTemplate mt;
+		private boolean requestSent = false;
+		private boolean responseReceived = false;
+		
+		public CheckDelivery(int newCode, int newQuantity) {
+			code=newCode;
+			deliveredQuantity=newQuantity;
+		}
+		
+		public void action() {
+			if(!requestSent){
+				ACLMessage checkRequest = new ACLMessage(ACLMessage.REQUEST);
+				checkRequest.addReceiver(warehouseAID);
+				checkRequest.setContent(String.valueOf(code));
+				checkRequest.setConversationId("check-delivery");
+				checkRequest.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+				myAgent.send(checkRequest);
+				//prepara il template per ricevere la risposta
+				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("check-delivery"), MessageTemplate.MatchInReplyTo(checkRequest.getReplyWith()));
+				System.out.println("Delivery request: CODE = "+code+"\nWaiting for warehouse response");
+				requestSent = true;
+			}
+			if(!responseReceived) {
+				ACLMessage response = myAgent.receive(mt);
+				if(response != null) {
+					responseReceived = true;
+					if(response.getPerformative() == (ACLMessage.CONFIRM)) {
+						String[] responseContent = response.getContent().split("\\|");
+						if(responseContent[0].equals("DELIVERY")) {
+							info.setOccupied(code);
+							System.out.println("Transaction "+code+" confirmed\nDelivery in progress...");
+							//simula il tempo di attesa del carico delle merci
+					        try {
+					            Thread.sleep(4000);
+					        } catch (InterruptedException e) {
+					            e.printStackTrace();
+					        }
+					        //salva il numero di merci che ha al momento al proprio interno
+					        info.setWareQuantity(deliveredQuantity);
+							System.out.println("Delivery completed: "+deliveredQuantity+" ware loaded");
+					        //prepara la risposta
+					        ACLMessage ready = response.createReply();
+					        //aggiunge come content la quantit� di merce consegnata
+					        ready.setContent(String.valueOf(deliveredQuantity));
+					        //contolla che le merci depositate sono del numero segnato nella transazione
+					        if(deliveredQuantity == Integer.parseInt(responseContent[1])) {
+						        //crea il messaggio in cui comunica al magazzino che il carico � stato accettato
+						        ready.setPerformative(ACLMessage.CONFIRM);
+						        myAgent.send(ready);
+						        addBehaviour(new LoadTransporter());
+					        }
+					        else {
+						        //crea il messaggio in cui comunica al magazzino che il carico NON � stato accettato
+						        ready.setPerformative(ACLMessage.CANCEL);
+						        myAgent.send(ready);
+						        //si imposta su libero
+						        info.setFree();
+					        }
+				        }
+						else if(responseContent[0].equals("COLLECT")) {
+							info.setOccupied(code);
+					        //prepara la risposta
+					        ACLMessage ready = response.createReply();
+					        //aggiunge come content la quantit� di merce richiesta
+					        ready.setContent(String.valueOf(deliveredQuantity));
+					        //contolla che le merci richieste sono del numero segnato nella transazione
+					        if(deliveredQuantity == Integer.parseInt(responseContent[1])) {
+						        //crea il messaggio in cui comunica al magazzino che il transactor � pronto
+						        ready.setPerformative(ACLMessage.CONFIRM);
+						        myAgent.send(ready);
+						        //avvia il behaviour che si occuper� di gestire la raccolta delle merci dai transporter e passa come argomento la quantit� di merceche deve essere raccolta
+						        addBehaviour(new CollectTransporter(deliveredQuantity));
+								System.out.println("Transaction "+code+" confirmed\nDelivery in progress...");
+					        }
+					        else {
+						        //crea il messaggio in cui comunica al magazzino che il carico NON � stato accettato
+						        ready.setPerformative(ACLMessage.CANCEL);
+						        myAgent.send(ready);
+						        //si imposta su libero
+						        info.setFree();
+					        }
+
+						}
+					}
+					else if(response.getPerformative() == (ACLMessage.DISCONFIRM)) {
+						System.out.println("Transaction "+code+" rejected");
+					}
+				}
+				else {
+					block();
+				}
+			}
+		}
+		
+		public boolean done() {
+			return responseReceived;
+		}
+		
+	}
+	
+	private class LoadTransporter extends Behaviour{
+
+		ACLMessage loadOrderMsg;
+		MessageTemplate mtLoadOrderMessageTemplate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.CFP), MessageTemplate.MatchConversationId("transactor-update"));
+		ACLMessage reply;
+		int transporterCapacity;
+		boolean transactionComplete = false;
+		
+		public void action() {
+			//si mette in ascolto di eventuali ordini di carico
+			loadOrderMsg = myAgent.receive(mtLoadOrderMessageTemplate);
+			if(loadOrderMsg != null) {
+				//prende in ingresso il numero massimo di merci che il transporter pu� trasportare
+				transporterCapacity = Integer.parseInt(loadOrderMsg.getContent());
+				reply = loadOrderMsg.createReply();
+				reply.setPerformative(ACLMessage.INFORM);
+				//controlla che il numero di merci rimaste sia inferiore o uguale a quelle che pu� caricare il transporter, ovvero se la transazione � completata
+				if(transporterCapacity >= info.getWareQuantity()) {
+					//informa il warehouse che il transporte � stato caricato e che la transazione � completata
+					reply.setContent("COMPLETED|"+info.getWareQuantity()+"|0");//passa COMPLETED, il numero di merci caricate, il numero di merci rimaste ovvero 0		
+					//imposta tutto quello che serve per definire la transazione completata e imposta il transactor su libero
+					info.setFree();
+					//aggiorna il flag che indica che la transazione � stata completata
+					transactionComplete = true;
+				}
+				else {
+					//aggiorna il numero di merci da dover ancora consegnare
+					info.setWareQuantity(info.getWareQuantity()-transporterCapacity);
+					//informa il warehouse che il transporter � stato caricato 
+					reply.setContent("LOADED|"+transporterCapacity+"|"+info.getWareQuantity());//passa LOADED, il numero di merci caricate, il numero di merci rimaste					
+				}
+				myAgent.send(reply);
+				//svuota il contenitore del messaggio
+				loadOrderMsg = null;
+			}
+			else {
+				block();
+			}
+		}
+
+		public boolean done() {
+			return transactionComplete;
+		}
+		
+		
+		
+	}
+	
+	private class CollectTransporter extends Behaviour{
+
+		ACLMessage collectOrderMsg;
+		MessageTemplate mtCollectOrderMessageTemplate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("transactor-collect"));
+		ACLMessage reply;
+		int transporterQuantity;
+		int quantityRequested;
+		boolean transactionComplete = false;
+		
+		public CollectTransporter(int newQuantityRequested) {
+			//salva la quantit� di merce richiesta dalla transazione
+			quantityRequested = newQuantityRequested;
+		}
+		
+		public void action() {
+			//si mette in ascolto di eventuali ordini di carico
+			collectOrderMsg = myAgent.receive(mtCollectOrderMessageTemplate);
+			if(collectOrderMsg != null) {
+				//prende in ingresso il numero di merci che il transporter ha al suo interno
+				transporterQuantity = Integer.parseInt(collectOrderMsg.getContent());
+				//aggiunge la quantit� di merce ricevuta a quella gi� presente
+				info.setWareQuantity(info.getWareQuantity()+transporterQuantity);
+				reply = collectOrderMsg.createReply();
+				reply.setPerformative(ACLMessage.INFORM);
+				//controlla che il numero di merci che ha ricevuto sin ora sia uguale al numero di merci che deve consegnare all'esterno, ovvero se la transazione � completata
+				if(quantityRequested == info.getWareQuantity()) {
+					//tempo di scarico all'esterno simulato
+					try
+					{
+					    Thread.sleep(1000);
+					}
+					catch(InterruptedException ex)
+					{
+					    Thread.currentThread().interrupt();
+					}
+					//informa il warehouse che il transporter ha consegnato la merce, che il transactor ha consegnato la merce all'esterno e che la transazione � completata
+					//passa COMPLETED e il numero di merci al suo interno (0 dato che le ha consegnate tutte all'esterno)	
+					reply.setContent("COMPLETED|0");
+					//imposta tutto quello che serve per definire la transazione completata e imposta il transactor su libero
+					info.setFree();
+					//aggiorna il flag che indica che la transazione � stata completata
+					transactionComplete = true;
+				}
+				else {
+					//informa il warehouse che il transporter ha caricato la merce nel transactor 
+					reply.setContent("LOADED|"+info.getWareQuantity());//passa LOADED e il numero di merci al suo interno					
+				}
+				myAgent.send(reply);
+				//svuota il contenitore del messaggio
+				collectOrderMsg = null;
+			}
+			else {
+				block();
+			}
+		}
+
+		public boolean done() {
+			return transactionComplete;
+		}
+		
+		
+		
+	}
+	
+	private class AddToWarehouse extends Behaviour{
+	
+		private String warehouseName;
+		private boolean requestSent = false;
+		private boolean replyReceived = false;
+		private MessageTemplate mt;
+		
+		public AddToWarehouse(String newWarehouseName) {
+			warehouseName = newWarehouseName;
+			
+		}
+		
+		public void action() {
+			//la richiesta non � stata ancora mandata
+			if(requestSent == false) {
+				//cerca nelle pagine gialle un Warehouse con il nome inserito
+				DFAgentDescription template = new DFAgentDescription();
+				ServiceDescription sd = new ServiceDescription();
+				sd.setType("warehousing");
+				template.addServices(sd);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template); 
+					for (int i = 0; i < result.length; ++i) {
+						if(result[i].getName().getName().equals(warehouseName)) {
+							warehouseAID = result[i].getName();
+						}
+					}
+					if(warehouseAID != null) {
+						ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+						request.addReceiver(warehouseAID);
+						request.setContent(info.getID()+":"+info.getCoord().getSector());
+						request.setConversationId("add-transactor");
+						request.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
+						myAgent.send(request);
+						//prepara il template per ricevere la risposta
+						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("add-transactor"), MessageTemplate.MatchInReplyTo(request.getReplyWith()));
+						System.out.println("Join request sent to warehouse.");
+						requestSent = true;
+						block();
+					}
+					else {
+						System.out.println("Warehouse not found.");
+						doDelete();
+					}
+				}
+				catch (FIPAException e) {
+					e.printStackTrace();
+				}
+			}
+			else if(replyReceived == false) {//la risposta non � ancora stata ricevuta
+				ACLMessage reply = myAgent.receive(mt);				
+				if (reply != null) {//risposta ricevuta
+					replyReceived = true;
+					if (reply.getPerformative() == ACLMessage.AGREE) {//la richiesta � stata accetta
+						System.out.println("Join request accepted");
+					}
+					else if(reply.getPerformative() == ACLMessage.REFUSE) {//la richiesta � stata respinta 
+						System.out.println(reply.getContent()+": join request rejected");
+						doDelete();
+					}
+				}
+				else { 
+					block();
+				}
+			}
+	
+		}
+		
+		public boolean done() {
+			return requestSent == true && replyReceived == true;
+		}
+	
+	}
+	
+}

@@ -1,0 +1,87 @@
+/*
+ * CREA I FILE .dat CONTENENTI LA PLANIMETRIA DEL MAGAZZINO (space.dat) E LA POSIZIONE DELLE SCAFFALATURE (shelves.dat)
+ * */
+
+package test;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Arrays;
+import java.util.TreeMap;
+
+import autoMag.pathFinder.ShortestPath;
+import autoMag.shelves.ShelfAccessPoint;
+import autoMag.shelves.ShelfUnit;
+import autoMag.space.Coord;
+import autoMag.space.CoordComparator;
+import autoMag.space.Space;
+import autoMag.space.SqrType;
+
+public class CreateNewShelves {
+	
+	public static void main(String[] arg) {
+		
+		SqrType[][] arr = new SqrType[8][8];
+		Space spc;
+		
+		for(int i=0;i<arr.length;i++) {
+			Arrays.fill(arr[i], SqrType.EMPTY);
+		}
+		spc = new Space(arr);
+		
+		System.out.println(spc.toVisual());
+		
+		ShortestPath path = new ShortestPath(spc);
+		
+		System.out.println("path:" + path.getShortestPath(new Coord(1,1), new Coord(2,2)).toString());
+		try{
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("..\\AutoMag\\space.dat"));
+			out.writeObject(spc);
+			out.close();
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream("..\\AutoMag\\space.dat"));
+			Space spcIn = (Space) in.readObject();
+			spcIn.mapSquares();
+			System.out.println(spcIn.toVisual());
+			in.close();
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		//creazione delle ShelfUnits
+		
+		TreeMap<Coord, ShelfUnit> shelves = new TreeMap<Coord, ShelfUnit>(new CoordComparator());
+		
+		for(int i=2; i<6; i++) {
+			shelves.put(new Coord(i,3), new ShelfUnit(new Coord(i,2), 3, ShelfAccessPoint.WEST));
+			shelves.put(new Coord(i,4), new ShelfUnit(new Coord(i,3), 3, ShelfAccessPoint.EAST));
+		}
+		
+		try{
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("shelves.dat"));
+			out.writeObject(shelves);
+			out.close();
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream("shelves.dat"));
+			TreeMap<Coord, ShelfUnit> shelvesIn = (TreeMap<Coord, ShelfUnit>) in.readObject();			
+			for (Coord key : shelvesIn.keySet()) {
+				System.out.println(shelvesIn.get(key));
+			}
+			in.close();
+			for (Coord key : shelvesIn.keySet()) {
+				spc.setSqrType(key, SqrType.SHELF);
+			}
+			spc.mapSquares();
+			System.out.println(spc.toVisual());
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+
+		
+		
+	}
+
+}

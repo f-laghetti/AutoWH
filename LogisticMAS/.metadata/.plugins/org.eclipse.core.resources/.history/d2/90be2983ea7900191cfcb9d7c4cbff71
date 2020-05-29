@@ -1,0 +1,934 @@
+/*
+ * agente che si occupa della gestione di tutte le azioni del magazzino
+ */
+
+package autoMag.agents;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.TreeMap;
+
+import autoMag.shelves.Shelf;
+import autoMag.shelves.ShelfAccessPoint;
+import autoMag.shelves.ShelfCoord;
+import autoMag.shelves.ShelfStatus;
+import autoMag.shelves.ShelfUnit;
+import autoMag.shelves.Ware;
+import autoMag.transaction.Transaction;
+import autoMag.transaction.TransactionStatus;
+import autoMag.utils.Decoders;
+import autoMag.utils.TransactorInfo;
+import autoMag.utils.TransporterInfo;
+import autoMag.utils.TransporterStatus;
+import jade.content.onto.basic.Action;
+import jade.core.AID;
+import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import pathFinder.path.ShortestPath;
+import pathFinder.squareSpace.Coord;
+import pathFinder.squareSpace.CoordComparator;
+import pathFinder.squareSpace.Space;
+import pathFinder.squareSpace.SqrType;
+
+public class Warehouse extends Agent {	
+	//interfaccia del warehouse
+	WarehouseGui myGui;
+	//lista dei transporter
+	private HashMap<AID, TransporterInfo> transporters;
+	//lista dei transactor
+	private HashMap<AID, TransactorInfo> transactors;
+	//planimetria del magazzino
+	private Space space;
+	//planimetria delle scaffalature
+	private TreeMap<Coord, ShelfUnit> shelves;
+	//numero delle transazioni fino a quel momento, sarà il numero identificativo della prossima
+	private int transactionCount = 0;
+	//lista delle transazioni aperte
+	private HashMap<Integer, Transaction> transactionOpen;
+	//lista delle transazioni chiuse
+	private HashMap<Integer, Transaction> transactionClosed;
+	
+	
+	public void setup() {
+		
+		//richiama l'interfaccia
+		myGui = new WarehouseGui(this);
+		myGui.showGui();
+		
+		System.out.println("NEW WAREHOUSE CREATED\nWarehouse name:\n"+getAID().getName());
+		Object[] arg = getArguments();
+		if (arg != null && arg.length == 2) {
+			transporters = new HashMap<AID, TransporterInfo>();
+			transactors = new HashMap<AID, TransactorInfo>();
+			shelves = new TreeMap<Coord, ShelfUnit>(new CoordComparator()); 
+			transactionOpen = new HashMap<Integer, Transaction>();
+			transactionClosed = new HashMap<Integer, Transaction>();
+			
+			try{
+				String urlSpace = (String) arg[0]; //prende la repository dove si trova il file contenente la planimetria del magazzino
+				String urlShelves = (String) arg[1]; //prende la repository dove si trova il file contenente le posizioni delle scaffalature
+				ObjectInputStream spaceReader = new ObjectInputStream(new FileInputStream(urlSpace));
+				space = (Space) spaceReader.readObject();
+				spaceReader.close();
+				ObjectInputStream shelvesReader = new ObjectInputStream(new FileInputStream(urlShelves));
+				shelves = (TreeMap<Coord, ShelfUnit>) shelvesReader.readObject();
+				shelvesReader.close();
+				for (Coord key : shelves.keySet()) { //inserisce le scaffalature all'interno della planimetria del magazzino
+					space.setSqrType(key, SqrType.SHELF);
+				}
+				space.mapSquares();
+				//registra il magazzino nelle yellow pages
+				DFAgentDescription dfd = new DFAgentDescription();
+				dfd.setName(getAID());
+				ServiceDescription sd = new ServiceDescription();
+				sd.setType("warehousing");
+				sd.setName("AutoMag-warehousing");
+				dfd.addServices(sd);
+				try {
+					DFService.register(this, dfd);
+				}
+				catch (FIPAException e) {
+					e.printStackTrace();
+				}
+
+				//crea il ricevitore di tutte le richieste che possono arrivare
+				addBehaviour(new RequestReceiver());
+				//crea il ricevitore di tutti gli spostamenti dei transporter
+				addBehaviour(new TransporterTracker());
+				
+			}
+			catch(FileNotFoundException e) {
+				System.out.println("Warehouse space file not found.");
+				doDelete();
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+		else {
+			//termina l'agente se non è stata trovata una planimetria valida
+			System.out.println("No warehouse space specified.");
+			doDelete();
+		}
+		
+	}
+	
+	public void takeDown() {
+		System.out.println("The Warehouse "+getAID().getName()+" is shutting down.");
+	}
+	
+	//METODI
+	
+	public void printPlanimetry() {
+		System.out.print(space.toVisual());
+	}
+	
+	public String getTransportersList() { //mostra la lista dei transporter registrati nel magazzino con le relative informazioni
+		String list = "";
+		for (AID key : transporters.keySet()) {
+		    list += transporters.get(key).toString()+"\n";
+		}
+		return list;
+	}
+	
+	public String getTransactorsList() { //mostra la lista dei transactor registrati nel magazzino con le relative informazioni
+		String list = "";
+		for (AID key : transactors.keySet()) {
+		    list += transactors.get(key).toString()+"\n";
+		}
+		return list;
+	}
+	
+	public String getShelvesList() { //mostra la lista degli scaffali
+		String list = "";
+		for (Coord key : shelves.keySet()) {
+			list += shelves.get(key).toString()+"\n";
+		}
+		return list;
+	}
+	
+	public String getOpenTransactionList() { //mostra la lista delle transazioni aperte
+		String list = "";
+		for (Integer key : transactionOpen.keySet()) {
+			list += transactionOpen.get(key).toString()+"\n";
+		}
+		return list;
+	}
+	
+	public String getClosedTransactionList() { //mostra la lista delle transazioni chiuse
+		String list = "";
+		for (Integer key : transactionClosed.keySet()) {
+			list += transactionClosed.get(key).toString()+"\n";
+		}
+		return list;
+	}
+	
+	private int countFreeShelves() { //conta il numero di scaffali liberi
+		int freeCount = 0;
+		Shelf[] tmpShelfUnit;
+		
+		for (Coord key : shelves.keySet()) {
+		    tmpShelfUnit = shelves.get(key).getShelves();
+		    for(Shelf shelf : tmpShelfUnit) {
+		    	if(shelf.getStatus() == ShelfStatus.EMPTY) {
+		    		freeCount++;
+		    	}
+		    }
+		}
+		
+		return freeCount;
+	}
+	
+	private ArrayList<ShelfCoord> reserveShelves(int quantity) { //prenota un numero stabilito di scaffali
+		ArrayList<ShelfCoord> reserved = new ArrayList<ShelfCoord>();
+		Shelf[] tmpShelfUnit;
+		int count=0; //conta il numero di shelves libere trovate
+		
+		if(count<quantity) {
+			for (Coord key : shelves.keySet()) {
+				if(count<quantity) {			
+				    tmpShelfUnit = shelves.get(key).getShelves();
+				    for(int i=0; i<tmpShelfUnit.length; i++) {
+						if(count<quantity) {	
+					    	if(tmpShelfUnit[i].getStatus() == ShelfStatus.EMPTY) {
+					    		reserved.add(new ShelfCoord(key, i));//aggiunge alla lista la shelf vuota trovata
+					    		tmpShelfUnit[i].reserve();//
+					    		count++;
+					    	} 
+				    	}
+				    }
+				}
+			}
+		}
+		
+		return reserved;
+	}
+	
+	public AID searchFreeTransporter() {
+		AID resultAID = null;
+		boolean transporterFound = false;
+		
+		for(AID key : transporters.keySet()) {
+			if(!transporterFound) {
+				if(transporters.get(key).getStatus() == TransporterStatus.UNUSED) {
+					resultAID = key;
+					transporterFound = true;
+				}
+			}
+		}
+		
+		return resultAID;
+	}
+	
+	public String removeBracket(String str) {
+		str = str.replace("[", "");
+		str = str.replace("]", "");
+		return str;
+	}
+	
+	public HashMap<Coord, ArrayList<Integer>> getShelvesToLoad(Transaction transaction, int numberNeeded) {
+		ArrayList<ShelfCoord> shelvesReserved = transaction.getShelvesReserved();
+		HashMap<Coord, ArrayList<Integer>> shelvesResult = new HashMap<Coord, ArrayList<Integer>>();
+		ShelfCoord tmp;
+		for(int i=0; i<numberNeeded; i++) {
+			tmp = shelvesReserved.get(i);
+			//se una shelf con quelle coordinate è già stata inserita, si aggiunge il livello da riempire a quella coordinata
+			if(shelvesResult.containsKey(tmp.getCoord())) {
+				shelvesResult.get(tmp.getCoord()).add(tmp.getLevel());
+			}
+			//altrimenti si crea una nuova chiave
+			else {
+				//crea una nuova chiave e la relativa lista di integer in cui verrà inserito il livello della shelf da riempire
+				shelvesResult.put(tmp.getCoord(), new ArrayList<Integer>(Arrays.asList(tmp.getLevel())));
+			}
+		}
+		return shelvesResult;		
+	}
+	
+	//BEHAVIOUR
+	
+	private class TransporterTracker extends CyclicBehaviour{
+		//Informazione sul cambio di posizione di un transporter
+		MessageTemplate mtTransporterMovement = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("transporter-movement"));
+		//Messaggio ricevuto
+		ACLMessage movementInfo;
+		
+		public void action() {
+			movementInfo = myAgent.receive(mtTransporterMovement);
+			if (movementInfo != null){
+				//prende la vecchia e la nuova poszione del transporter
+				Coord oldPosition = transporters.get(movementInfo.getSender()).getCoord();
+				String[] newCoord = movementInfo.getContent().split(":");
+				Coord newPosition = new Coord(Integer.parseInt(newCoord[0]), Integer.parseInt(newCoord[1]));
+				//aggiorna la posizione nello space
+				space.setSqrType(oldPosition, SqrType.EMPTY);
+				space.setSqrType(newPosition, SqrType.TRANSPORTER);
+				//aggiorna la posizione nelle TransporterInfo
+				transporters.get(movementInfo.getSender()).setCoord(newPosition);
+				//PROVA STAMPA
+				for(int i=0; i<50; i++) {System.out.println("\n");}
+			    printPlanimetry();
+			}
+			//ripulisce il contenitore del messaggio
+			movementInfo = null;
+		}
+		
+	}
+	
+	private class RequestReceiver extends CyclicBehaviour{
+		//TEMPLATE DI TUTTE LE RICHIESTE CHE POSSONO ARRIVARE ALL'AGENTE
+		//Richiesta di aggiungere un transporter al magazzino
+		MessageTemplate mtAddTransporterRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("add-transporter"));
+		//Richiesta di aggiungere un transactor al magazzino
+		MessageTemplate mtAddTransactorRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("add-transactor"));
+		//Richiesta di depositare merce nel magazzino
+		MessageTemplate mtStoreRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("store-request"));
+		//Richiesta di prelevare merce dal magazzino
+		MessageTemplate mtWithdrawRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("withdraw-request"));
+		//Richiesta di controllare se una richiesta di deposito è valida
+		MessageTemplate mtCheckDelivery = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("check-delivery"));		
+
+		//CONTENITORI DELLE RICHIESTE
+		ACLMessage rqstTransporter;
+		ACLMessage rqstTransactor;
+		ACLMessage rqstStore;
+		ACLMessage rqstWithdraw;
+		ACLMessage rqstDeliveryCheck;
+		
+		public void action() {
+			//Il behaviour controlla se il messaggio ricevuto è una delle richieste
+			rqstTransporter = myAgent.receive(mtAddTransporterRequest);
+			rqstTransactor = myAgent.receive(mtAddTransactorRequest);
+			rqstStore = myAgent.receive(mtStoreRequest);
+			rqstWithdraw = myAgent.receive(mtWithdrawRequest);
+			rqstDeliveryCheck = myAgent.receive(mtCheckDelivery);
+			
+			if(rqstTransporter != null) {
+				addBehaviour(new AddNewTransporter((ACLMessage) rqstTransporter.clone()));//crea un nuovo opportuno behaviour che si occuperà di gestire il messaggio
+				rqstTransporter = null;
+			}
+			else if(rqstTransactor != null) {
+				addBehaviour(new AddNewTransactor((ACLMessage) rqstTransactor.clone()));
+				rqstTransactor = null;
+			}
+			else if(rqstStore != null) {
+				addBehaviour(new StoreRequest((ACLMessage) rqstStore.clone()));
+				rqstStore = null;
+			}
+			else if(rqstDeliveryCheck != null) {
+			addBehaviour(new DeliveryCheck((ACLMessage) rqstDeliveryCheck.clone()));
+			rqstWithdraw = null;
+			}
+			/*else if(rqstWithdraw != null) {
+				addBehaviour(new WithdrawRequest(rqstWithdraw.clone()));
+				rqstWithdraw = null;
+			}*/
+			block();
+		}
+		
+	}
+	
+	//BEHAVIOUR
+	
+	private class AddNewTransporter extends Behaviour { //esamina la richiesta di aggiunta di un nuovo trasportatore al magazzino
+		
+		MessageTemplate mtConfirmAdd = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("add-transporter"));
+		ACLMessage request;
+		ACLMessage confirm;
+		boolean requestReplied = false;
+		boolean requestConfirmed = false;
+		boolean requestRejected = false;
+		boolean existID = false;
+		boolean existCoord = false;
+		
+		public AddNewTransporter(ACLMessage newRequest) {
+			request = newRequest;
+		}
+		
+		public void action() {
+			if(!requestReplied) {
+				String newTransporterInfoStr = request.getContent();
+				String[] newTransporterInfo = newTransporterInfoStr.split(":");
+				String newTransporterID = newTransporterInfo[0];
+				Coord newTransporterCoord = new Coord((int) Integer.parseInt(newTransporterInfo[1]), (int) Integer.parseInt(newTransporterInfo[2]));
+				int newTransporterCapacity = Integer.parseInt(newTransporterInfo[3]);
+				Float newTransporterCharge = Float.parseFloat(newTransporterInfo[4]);
+				System.out.println("Transporter ID:"+newTransporterID+" NAME:"+request.getSender().getName()+" asked to deploy in this warehouse at coord "+newTransporterCoord.toString());
+				ACLMessage reply = request.createReply();
+				if(!transporters.containsKey(request.getSender())) {//controlla che non esista già un transporter con lo stesso AID
+					for (AID key : transporters.keySet()) {//controlla se è già presente un transporter con lo stesso ID
+						if(transporters.get(key).getID().equals(newTransporterID)){
+					    	existID = true;
+					    }
+					}
+					if(!existID){//controlla che non sia stato trovato un transporter con lo stesso ID
+						if(space.getSqrType(newTransporterCoord) == SqrType.EMPTY) {
+							reply.setPerformative(ACLMessage.AGREE);
+							reply.setContent("ACCEPTED");
+							myAgent.send(reply);
+							transporters.put(request.getSender(), new TransporterInfo(newTransporterID, newTransporterCoord, TransporterStatus.NOTREADY, newTransporterCapacity, newTransporterCharge));
+							System.out.println("TRANSPORTER ACCEPTED");
+							//qua andranno ricalcolati tutti i percorsi dato che si aggiunge un nuovo elemento nello space
+							requestReplied = true;								
+						}
+						else {
+							reply.setPerformative(ACLMessage.REFUSE);
+							reply.setContent("ERROR 103");
+							myAgent.send(reply);
+							System.out.println("TRANSPORTER REJECTED: DEPLOY SPACE OCCUPIED");
+							requestRejected = true;
+						}						
+					}
+					else {
+						reply.setPerformative(ACLMessage.REFUSE);
+						reply.setContent("ERROR 102");
+						myAgent.send(reply);
+						System.out.println("TRANSPORTER REJECTED: TRANSPORTER ID ALREADY EXIST");
+						requestRejected = true;
+					}
+				}
+				else {
+					reply.setPerformative(ACLMessage.REFUSE);
+					reply.setContent("ERROR 101");
+					myAgent.send(reply);
+					System.out.println("TRANSPORTER REJECTED: TRANSPORTER AID ALREADY EXIST");
+					requestRejected = true;
+				}
+			}
+			else if(!requestConfirmed) {
+				confirm = myAgent.receive(mtConfirmAdd);
+				transporters.get(confirm.getSender()).setStatus(TransporterStatus.UNUSED);
+				System.out.println("TRANSPORTER ADD CONFIRMED");
+				space.setSqrType(transporters.get(confirm.getSender()).getCoord(), SqrType.TRANSPORTER);
+				space.mapSquares();
+				requestConfirmed = true;
+			}
+			block();
+		}
+		
+		public boolean done() {
+			return (requestReplied && requestConfirmed) || requestRejected;
+		}
+		
+	}
+	
+	private class AddNewTransactor extends Behaviour {
+		
+		ACLMessage request;
+		boolean requestReplied = false;
+		boolean requestRejected = false;
+		boolean existID = false;
+		
+		public AddNewTransactor(ACLMessage newRequest) {
+			request = newRequest;
+		}
+		
+		public void action() {
+			String newTransactorInfoStr = request.getContent();
+			String[] newTransactorInfo = newTransactorInfoStr.split(":");
+			String newTransactorID = newTransactorInfo[0];
+			Coord newTransactorCoord = new Coord((int) Integer.parseInt(newTransactorInfo[1]), (int) Integer.parseInt(newTransactorInfo[2]));
+			System.out.println("Transactor ID:"+newTransactorID+" NAME:"+request.getSender().getName()+" asked to deploy in this warehouse at coord "+newTransactorCoord.toString());
+			ACLMessage reply = request.createReply();
+			if(!transactors.containsKey(request.getSender())) {//controlla che non esista già un transactor con lo stesso AID
+				for (AID key : transactors.keySet()) {//controlla se è già presente un transactor con lo stesso ID
+					if(transactors.get(key).getID().equals(newTransactorID)){
+				    	existID = true;
+				    }
+				}
+				if(!existID){//controlla che non sia stato trovato un transactor con lo stesso ID
+					if(space.getSqrType(newTransactorCoord) == SqrType.EMPTY) {
+						reply.setPerformative(ACLMessage.AGREE);
+						reply.setContent("ACCEPTED");
+						myAgent.send(reply);
+						transactors.put(request.getSender(), new TransactorInfo(newTransactorID, newTransactorCoord));
+						space.setSqrType(transactors.get(request.getSender()).getCoord(), SqrType.LOADINGDOCK);
+						System.out.println("TRANSACTOR ACCEPTED");
+						requestReplied = true;								
+					}
+					else {
+						reply.setPerformative(ACLMessage.REFUSE);
+						reply.setContent("ERROR 103");
+						myAgent.send(reply);
+						System.out.println("TRANSACTOR REJECTED: DEPLOY SPACE OCCUPIED");
+						requestRejected = true;
+					}						
+				}
+				else {
+					reply.setPerformative(ACLMessage.REFUSE);
+					reply.setContent("ERROR 102");
+					myAgent.send(reply);
+					System.out.println("TRANSACTOR REJECTED: TRANSACTOR ID ALREADY EXIST");
+					requestRejected = true;
+				}
+			}
+			else {
+				reply.setPerformative(ACLMessage.REFUSE);
+				reply.setContent("ERROR 101");
+				myAgent.send(reply);
+				System.out.println("TRANSACTOR REJECTED: TRANSACTOR AID ALREADY EXIST");
+				requestRejected = true;
+			}		
+			block();
+		}
+		
+		public boolean done() {
+			return requestReplied || requestRejected;
+		}
+		
+	}
+	
+	private class StoreRequest extends Behaviour {
+	
+		MessageTemplate mtConfirmTransaction;
+		ACLMessage request;
+		ACLMessage confirm;
+		boolean requestReplied = false;
+		boolean requestConfirmed = false;
+		boolean requestRejected = false;
+		
+		public StoreRequest(ACLMessage newRequest) {
+			request = newRequest;
+		}
+		
+		public void action() {
+			if(!requestReplied) {
+				String requestContent = request.getContent();
+				String[] wareInfo = requestContent.split(":");
+				String wareCode = wareInfo[0];
+				String wareName = wareInfo[1];
+				int wareQuantity = (int) Integer.parseInt(wareInfo[2]);
+				System.out.println("CLIENT:"+request.getSender().getName()+" requested to store "+wareQuantity+"x "+wareName+" (code: "+wareCode+")");
+				ACLMessage reply = request.createReply();
+				if(countFreeShelves()>=wareQuantity) {//controlla che ci siano abbastanza scaffali liberi
+					ArrayList<ShelfCoord> reservedShelves = reserveShelves(wareQuantity);//prenota tutte le shelf necessarie
+					//crea una nuova transazione
+					Transaction newTransaction = new Transaction(transactionCount, request.getSender(), myAgent.getAID(), new Ware(wareCode, wareName, request.getSender()), wareQuantity, new Date(), reservedShelves);
+					//aggiunge la transazione alla lista
+					transactionOpen.put(transactionCount, newTransaction);
+					reply.setPerformative(ACLMessage.AGREE);
+					//creare la nuova transazione da inserire nella lista delle transazioni attive e generare un codice identificativo
+					//prenotare le shelves che dovranno ospitare le ware
+					reply.setContent(String.valueOf(transactionCount));//passare il codice identificativo ed eventualmente assegnarlo come modalità di risposta
+					reply.setReplyWith(String.valueOf(transactionCount));
+					transactionCount++;
+					myAgent.send(reply);
+					mtConfirmTransaction = MessageTemplate.and(MessageTemplate.MatchConversationId("store-request"),MessageTemplate.MatchInReplyTo(reply.getReplyWith()));
+					System.out.println("Store request accepted");
+					System.out.println("TRANSACTION: "+newTransaction);
+					System.out.println("SHELF RESERVED: "+reservedShelves);
+					requestReplied = true;
+				}
+				else {
+					reply.setPerformative(ACLMessage.REFUSE);
+					reply.setContent("Not enought free space");
+					myAgent.send(reply);
+					System.out.println("Store request rejected");
+					requestRejected = true;
+				}
+			}
+			else if(!requestConfirmed) {
+				confirm = myAgent.receive(mtConfirmTransaction);
+				if(confirm != null) {
+					System.out.println("TRANSACTION CONFIRMED");
+					requestConfirmed = true;
+				}
+			}
+			block();
+		}
+		
+		public boolean done() {
+			return (requestReplied && requestConfirmed) || requestRejected;
+		}
+		
+	}
+	
+	private class DeliveryCheck extends Behaviour{
+		
+		ACLMessage request;
+		ACLMessage confirm;
+		MessageTemplate mt;
+		boolean responseSent = false;
+		boolean confirmReceived = false;
+		boolean requestRejected = false;
+		int code;
+		
+		public DeliveryCheck (ACLMessage newRequest) {
+			request = newRequest;
+			code = Integer.parseInt(request.getContent());
+		}
+		
+		public void action() {
+			//controlla se il responso non è già stato mandato
+			if(!responseSent) {
+				//mettere un controllo sul mittente per capire se è uno dei transactor del magazzino
+				ACLMessage response = request.createReply();
+				//controlla che nella lista delle transazioni aperte ci sia una corrspondente a quel codice
+				if(transactionOpen.containsKey(code)) {
+					//controlla che la transazione trovata non sia aperta (e non in progress)
+					if(transactionOpen.get(code).getStatus() == TransactionStatus.OPEN){
+						//setta le impostazioni del responso
+						response.setPerformative(ACLMessage.CONFIRM);
+						response.setReplyWith("cfp"+System.currentTimeMillis());
+						//il contenuto della risposta affermativa è la quantità di merce che deve essere consegnata
+						response.setContent(String.valueOf(transactionOpen.get(code).getQuantity()));
+						myAgent.send(response);
+						//prepara il template per ricevere la risposta
+						mt = MessageTemplate.and(MessageTemplate.MatchConversationId("check-delivery"), MessageTemplate.MatchInReplyTo(response.getReplyWith()));
+						//cambia lo stato del transactor in "occupied"
+						transactors.get(request.getSender()).setOccupied(code);
+						//cambia lo stato della transaction in "in-progress"
+						transactionOpen.get(code).setInProgress();
+						System.out.println("Transaction "+code+" is in progress");
+						responseSent = true;
+					}
+					else {
+						response.setPerformative(ACLMessage.DISCONFIRM);
+						myAgent.send(response);				
+						System.out.println("Transaction "+code+" is already in progress");
+						requestRejected = true;
+					}
+				}
+				else {
+					response.setPerformative(ACLMessage.DISCONFIRM);
+					myAgent.send(response);				
+					System.out.println("Transaction "+code+" doesn't exist or is already closed");
+					requestRejected = true;
+				}
+			}
+			if(!confirmReceived) {
+				confirm = myAgent.receive(mt);
+				if(confirm != null) {
+					if(confirm.getPerformative() == ACLMessage.CONFIRM) {
+						System.out.println("TRANSACTION DELIVERED");
+						//mandare un messaggio al cliente che aveva richiesto la transazione in cui lo si informa dell'avvenuta consegna
+						//cambia la quantità di merce presente nel transactor
+						transactors.get(confirm.getSender()).setWareQuantity(Integer.parseInt(confirm.getContent()));
+						//cambia lo stato della transaction in "delivered"
+						transactionOpen.get(code).setDelivered();
+						confirmReceived = true;
+						//passa la transazione al behaviour che si occuperà di distribuire le merci relative
+						addBehaviour(new StoreWare(confirm.getSender(),transactionOpen.get(code)));
+					}
+					else if(confirm.getPerformative() == ACLMessage.CANCEL) {
+						System.out.println("TRANSACTION REJECTED: WRONG WARE QUANTITY DELIVERED");
+						//mandare un messaggio al cliente che aveva richiesto la transazione in cui lo si informa dell'errore
+						//imposta il transactor su free
+						transactors.get(confirm.getSender()).setFree();
+						//cambia lo stato della transaction in "open"
+						transactionOpen.get(code).setOpen();
+						confirmReceived = true;
+					}
+				}
+			}
+			block();
+			
+		}
+		
+		public boolean done() {
+			return (responseSent && confirmReceived) || requestRejected;
+		}
+		
+		
+		
+	}
+	
+	private class StoreWare extends Behaviour{
+		
+		AID transactorAID;
+		AID transporterAID;
+		//l'AID del transporter attualmente impegnato nell'andare a ritirare le merci dal transactor
+		AID activeTransporter;
+		Transaction transaction;
+		boolean transactionComplete;
+		boolean transporterFound;
+		ShortestPath pathFinder;
+		LinkedList<Coord> path;
+		MessageTemplate mtTransactorUpdate;
+		MessageTemplate mtTransporterUpdate;
+		MessageTemplate mtTransporterToTransactor;
+		ACLMessage transactorUpdateMsg;
+		ACLMessage transporterUpdateMsg;
+		ACLMessage transporterToTransactorMsg;
+		
+		public StoreWare(AID newTransactorAID, Transaction newTransaction) {
+			transactorAID = newTransactorAID;
+			transaction = newTransaction;
+			transactionComplete = false;
+			pathFinder = new ShortestPath(space);
+			mtTransactorUpdate = MessageTemplate.and((MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("transactor-update"))),MessageTemplate.MatchInReplyTo(String.valueOf(transaction.getCode())));
+			mtTransporterUpdate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("transporter-update"));
+			mtTransporterToTransactor = MessageTemplate.and(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("travel-to-transactor")), MessageTemplate.MatchInReplyTo(String.valueOf(transaction.getCode())));
+		}
+		
+		public void action() {
+			//carca di riceve il messaggio che comunica che il transactor ha consegnato la merce al transporter ed eventualmente che la trnsazione è stata completata
+			transactorUpdateMsg = myAgent.receive(mtTransactorUpdate);
+			//riceve eventuali aggiornamenti dai transporter sull'andamento della loro mansione
+			transporterUpdateMsg = myAgent.receive(mtTransporterUpdate);
+			//riceve l'eventuale messaggio del transporter che arriva al transactor
+			transporterToTransactorMsg = myAgent.receive(mtTransporterToTransactor);
+			if(transactorUpdateMsg != null) {
+				String decodedTransactorMsg[] = Decoders.decodeTransactorUpdate(transactorUpdateMsg.getContent());
+				//se il contenuto del messaggio è "COMPLETE" allora vuol dire che sono state consegnate tutte le merci 
+				if(decodedTransactorMsg[0].equals("COMPLETED")) {
+					//imposta il transactor su libero
+					transactors.get(transactorAID).setFree();
+					//dichiare la transazione completata
+					System.out.println("TRANSACTION COMPLETE");
+					transactionComplete = true;
+					transaction.setClosed();
+					//sposta la transazione dall lista di quelle aperte alla lista di quelle chiuse
+					transactionClosed.put(transaction.getCode(), transaction);
+					transactionOpen.remove(transaction.getCode());
+					//avvisa il cliente che è stata chiusa la transazione
+				}
+				//in ogni caso vuol dire che il transactor ha finito di caricare le merci sul transporter richiesto
+				//prende le ShelfUnit in cui deve mettere la merce
+				HashMap<Coord, ArrayList<Integer>> shelvesToLoad = getShelvesToLoad(transaction, Integer.parseInt(decodedTransactorMsg[1]));
+				//trasforma tutto in string
+				ArrayList<String> contentArray = new ArrayList<String>();
+				for(Coord key : shelvesToLoad.keySet()) {
+					//calcola l'accessPoint della shelvesToLoad
+					Coord shelvesAccessPoint;
+					if(shelves.get(key).getAccessPoint()==ShelfAccessPoint.NORTH) {
+						shelvesAccessPoint = key.goNorth();
+					}
+					else if(shelves.get(key).getAccessPoint()==ShelfAccessPoint.SUD) {
+						shelvesAccessPoint = key.goSouth();
+					}
+					else if(shelves.get(key).getAccessPoint()==ShelfAccessPoint.WEST) {
+						shelvesAccessPoint = key.goWest();
+					}
+					else {
+						shelvesAccessPoint = key.goEast();
+					}
+					//TESTING
+					System.out.println(key);
+					System.out.println(transactors.get(transactorAID).getCoord());
+					System.out.println(shelvesAccessPoint);
+					//calcola per ogni coord delle shelvesToLoad il percorso da fare dal transactor all'access point di quella shelf					
+					contentArray.add(key+"-"+removeBracket(shelvesToLoad.get(key).toString())+"-"+pathFinder.getShortestPath(transactors.get(transactorAID).getCoord(), shelvesAccessPoint));
+				} 
+				for(String str : contentArray) {
+					System.out.println(str);
+				}
+				//poi trasforma tutto in string e lo aggiunge a contentArray 
+				//passa le string nel formato coord-livelli-path|coord-livelli-path|...
+				//comunica al transporter appena caricato che può iniziare a muoversi per andare a sistemare le merci nelle scaffalature
+				//libera l'activeTransporter
+				activeTransporter = null;
+				//svuota il contenitore del messaggio
+				transactorUpdateMsg = null;
+			}
+			if(transporterUpdateMsg != null) {
+				//se il transporter è arrivato davanti ad un ShelfUnit, ovvero non è il transporter attivo, e ha completato la sua mansione
+				//il warehouse aggiorna le shelves interessate
+				//se tutte le consegne del transporter sono state completate, il warehouse lo imposta su libero
+				if(transporterUpdateMsg.getContent().equals("COMPLETE")) {
+					transporters.get(transporterUpdateMsg.getSender()).setStatus(TransporterStatus.UNUSED);
+				}
+				//svuota il contenitore del messaggio
+				transporterUpdateMsg = null;
+			}
+			if(transporterToTransactorMsg != null) {
+				//prende la vecchia e la nuova poszione del transporter
+				Coord oldPosition = transporters.get(transporterToTransactorMsg.getSender()).getCoord();
+				String[] newCoord = transporterToTransactorMsg.getContent().split(":");
+				Coord newPosition = new Coord(Integer.parseInt(newCoord[0]), Integer.parseInt(newCoord[1]));
+				//aggiorna la posizione nello space
+				space.setSqrType(oldPosition, SqrType.EMPTY);
+				space.setSqrType(newPosition, SqrType.LOADINGDOCKOCCUPIED);
+				//aggiorna la posizione nelle TransporterInfo
+				transporters.get(transporterToTransactorMsg.getSender()).setCoord(newPosition);
+				//imposta lo stato del transporter su working
+				transporters.get(transporterToTransactorMsg.getSender()).setStatus(TransporterStatus.WORKING);
+				//il warehouse comunica al transactor che può passare la merce al transporter
+				ACLMessage loadTransactor = new ACLMessage(ACLMessage.CFP);
+				loadTransactor.addReceiver(transactorAID);
+				//passa al transactor la capacità massima del transporter
+				loadTransactor.setContent(String.valueOf(transporters.get(activeTransporter).getCapacity()));
+				loadTransactor.setConversationId("transactor-update");
+				loadTransactor.setReplyWith(String.valueOf(transaction.getCode()));
+				myAgent.send(loadTransactor);				
+				//PROVA STAMPA
+				for(int i=0; i<50; i++) {System.out.println("\n");}
+			    printPlanimetry();
+				//svuota il contenitore del messaggio
+				transporterToTransactorMsg = null;
+			}
+				
+			//se la transazione non è ancora completa e non c'è nessun transporter attivo e nella zona di carico del transactor non è presente nessun transporter
+			if(!transactionComplete && activeTransporter == null && space.getSqrType(transactors.get(transactorAID).getCoord()) == SqrType.LOADINGDOCK) {
+				//cerca il primo transporter libero
+				transporterAID = searchFreeTransporter();
+				
+				if(transporterAID != null) {
+					//imposta il transporter trovato come transporter attivo e lo imposta su moving
+					activeTransporter = transporterAID;
+					transporters.get(transporterAID).setStatus(TransporterStatus.MOVING);
+					//calcola il percorso dal transporter al transactor
+					path = pathFinder.getShortestPath(transporters.get(transporterAID).getCoord(), transactors.get(transactorAID).getCoord());
+					System.out.println(activeTransporter.getLocalName()+" - PATH: "+path);
+					//comunica il percorso al transporter
+					ACLMessage sendPath = new ACLMessage(ACLMessage.CFP);
+					sendPath.addReceiver(activeTransporter);
+					sendPath.setContent(removeBracket(path.toString()));
+					sendPath.setConversationId("travel-to-transactor");
+					//il codice della risposta è il numero della transazione
+					sendPath.setReplyWith(String.valueOf(transaction.getCode()));
+					myAgent.send(sendPath);
+				}
+			}
+			block();
+		}
+		
+		public boolean done() {
+			return transactionComplete;
+		}
+		
+	}
+	
+	//VECCHIE VERSIONI
+	
+	/*private class AddNewTransporter extends CyclicBehaviour {
+		
+		MessageTemplate mtAddRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE), MessageTemplate.MatchConversationId("add-transporter"));
+		MessageTemplate mtConfirmAdd = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), MessageTemplate.MatchConversationId("add-transporter"));
+		ACLMessage request;
+		ACLMessage confirm;
+		boolean existID;
+		boolean existCoord;
+		
+		public void action() {
+			request = myAgent.receive(mtAddRequest);
+			confirm = myAgent.receive(mtConfirmAdd);
+			existID = false;
+			existCoord = false;
+			if(request != null) {
+				String newTransporterInfoStr = request.getContent();
+				String[] newTransporterInfo = newTransporterInfoStr.split(":");
+				String newTransporterID = newTransporterInfo[0];
+				Coord newTransporterCoord = new Coord((int) Integer.parseInt(newTransporterInfo[1]), (int) Integer.parseInt(newTransporterInfo[2]));
+				Float newTransporterCharge = Float.parseFloat(newTransporterInfo[3]);
+				System.out.println("Transporter ID:"+newTransporterID+" NAME:"+request.getSender().getName()+" asked to deploy in this warehouse at coord "+newTransporterCoord.toString());
+				ACLMessage reply = request.createReply();
+				if(!transporters.containsKey(request.getSender())) {//controlla che non esista già un transporter con lo stesso AID
+					for (AID key : transporters.keySet()) {//controlla se è già presente un transporter con lo stesso ID
+						if(transporters.get(key).getID().equals(newTransporterID)){
+					    	existID = true;
+					    }
+					}
+					if(!existID){//controlla che non sia stato trovato un transporter con lo stesso ID
+						if(space.getSqrType(newTransporterCoord) == SqrType.EMPTY) {
+							reply.setPerformative(ACLMessage.AGREE);
+							reply.setContent("ACCEPTED");
+							myAgent.send(reply);
+							transporters.put(request.getSender(), new TransporterInfo(request.getSender(), newTransporterID, newTransporterCoord, TransporterStatus.NOTREADY, newTransporterCharge));
+							System.out.print("TRANSPORTER ACCEPTED\nTRANSPORTERS LIST:\n"+getTransportersList());
+							//qua andranno ricalcolati tutti i percorsi dato che si aggiunge un nuovo elemento nello space
+							block();								
+						}
+						else {
+							reply.setPerformative(ACLMessage.REFUSE);
+							reply.setContent("ERROR 103");
+							myAgent.send(reply);
+							System.out.print("TRANSPORTER REJECTED: DEPLOY SPACE OCCUPIED\nTRANSPORTERS LIST:\n"+getTransportersList());
+							block();
+						}						
+					}
+					else {
+						reply.setPerformative(ACLMessage.REFUSE);
+						reply.setContent("ERROR 102");
+						myAgent.send(reply);
+						System.out.print("TRANSPORTER REJECTED: TRANSPORTER ID ALREADY EXIST\nTRANSPORTERS LIST:\n"+getTransportersList());
+						block();
+					}
+				}
+				else {
+					reply.setPerformative(ACLMessage.REFUSE);
+					reply.setContent("ERROR 101");
+					myAgent.send(reply);
+					System.out.print("TRANSPORTER REJECTED: TRANSPORTER AID ALREADY EXIST\nTRANSPORTERS LIST:\n"+getTransportersList());
+					block();
+				}
+			}
+			else if(confirm != null) {
+				transporters.get(confirm.getSender()).setStatus(TransporterStatus.UNUSED);
+				System.out.print("TRANSPORTER ADD CONFIRMED\nTRANSPORTERS LIST:\n"+getTransportersList());
+				space.setSqrType(transporters.get(confirm.getSender()).getCoord(), SqrType.TRANSPORTER);
+				space.mapSquares();
+				System.out.print("Warehouse planimetry:\n"+space.toVisual());
+				block();
+			}
+			else {
+				block();
+			}
+		}
+		
+	}*/
+	
+/*private class StoreRequest extends CyclicBehaviour {
+		
+		MessageTemplate mtStoreRequest = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), MessageTemplate.MatchConversationId("store-request"));
+		MessageTemplate mtConfirmTransaction = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.CONFIRM), MessageTemplate.MatchConversationId("store-request"));
+		ACLMessage request;
+		ACLMessage confirm;
+		
+		public void action() {
+			request = myAgent.receive(mtStoreRequest);
+			confirm = myAgent.receive(mtConfirmTransaction);
+			if(request != null) {
+				String requestContent = request.getContent();
+				String[] wareInfo = requestContent.split(":");
+				String wareCode = wareInfo[0];
+				String wareName = wareInfo[1];
+				int wareQuantity = (int) Integer.parseInt(wareInfo[2]);
+				System.out.println("CLIENT:"+request.getSender().getName()+" requested to store "+wareQuantity+"x "+wareName+" (code: "+wareCode+")");
+				ACLMessage reply = request.createReply();
+				if(freeShelves()>=wareQuantity) {//controlla che ci siano abbastanza scaffali liberi
+					reply.setPerformative(ACLMessage.AGREE);
+					//creare la nuova transazione da inserire nella lista delle transazioni attive e generare un codice identificativo
+					//prenotare le shelves che dovranno ospitare le ware
+					reply.setContent("CODICE DELLA TRANSAZIONE");//passare il codice identificativo ed eventualmente assegnarlo come modalità di risposta
+					reply.setReplyWith("CODICE DELLA TRANSAZIONE");
+					myAgent.send(reply);
+					System.out.print("Store request accepted");
+					block();
+				}
+				else {
+					reply.setPerformative(ACLMessage.REFUSE);
+					reply.setContent("Not enought free space");
+					myAgent.send(reply);
+					System.out.print("Store request rejected");
+					block();
+				}
+			}
+			else if(confirm != null) {
+				System.out.print("TRANSACTION CONFIRMED");
+				block();
+			}
+			else {
+				block();
+			}
+		}
+		
+	}*/
+	
+}
+
+

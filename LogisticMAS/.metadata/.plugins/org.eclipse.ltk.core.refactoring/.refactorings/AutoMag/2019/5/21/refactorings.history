@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename field &apos;activeTransporter&apos; in &apos;autoMag.agents.Warehouse.StoreWare&apos; to &apos;transporterToTransactor&apos;&#x0D;&#x0A;- Original project: &apos;AutoMag&apos;&#x0D;&#x0A;- Original element: &apos;autoMag.agents.Warehouse.StoreWare.activeTransporter&apos;&#x0D;&#x0A;- Renamed element: &apos;autoMag.agents.Warehouse.StoreWare.transporterToTransactor&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" delegate="false" deprecate="false" description="Rename field &apos;activeTransporter&apos;" flags="589830" getter="false" id="org.eclipse.jdt.ui.rename.field" input="/src&lt;autoMag.agents{Warehouse.java[Warehouse[StoreWare^activeTransporter" name="transporterToTransactor" references="true" setter="false" stamp="1558317729923" textual="false" version="1.0"/>
+</session>

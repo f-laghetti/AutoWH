@@ -1,0 +1,163 @@
+package autoMag.agents;
+
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+class WarehouseGui extends JFrame {	
+	private Warehouse myAgent;
+	
+	WarehouseGui(Warehouse a) {
+		super(a.getLocalName());
+		
+		myAgent = a;
+		
+		JPanel p = new JPanel();
+		p.setLayout(new GridLayout(3, 3));
+		getContentPane().add(p, BorderLayout.CENTER);
+
+		JButton requestButton3 = new JButton("Transactor List");
+		requestButton3.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("TRANSACTORS:\n"+myAgent.getTransactorsList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+
+		JButton requestButton4 = new JButton("Open Transactions");
+		requestButton4.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("OPEN TRANSACTION:\n"+myAgent.getOpenTransactionList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		JButton requestButton5 = new JButton("Closed Transactions");
+		requestButton5.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("CLOSED TRANSACTION:\n"+myAgent.getClosedTransactionList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		JButton requestButton7 = new JButton("Open Collect");
+		requestButton7.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("OPEN COLLECT:\n"+myAgent.getOpenCollectList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		JButton requestButton9 = new JButton("Closed Collect");
+		requestButton9.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("CLOSED COLLECT:\n"+myAgent.getClosedCollectList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		JButton requestButton6 = new JButton("Shelves List");
+		requestButton6.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					System.out.println("SHELVES:\n"+myAgent.getShelvesList());
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		JButton requestButton10 = new JButton("This Warehouse AID");
+		requestButton10.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					myAgent.printAID();
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		p = new JPanel();
+		p.add(requestButton3);
+		p.add(requestButton4);
+		p.add(requestButton5);
+		p.add(requestButton7);
+		p.add(requestButton9);
+		p.add(requestButton6);
+		p.add(requestButton10);
+		getContentPane().add(p, BorderLayout.SOUTH);
+		
+		// Make the agent terminate when the user closes 
+		// the GUI using the button on the upper right corner	
+		addWindowListener(new	WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				myAgent.doDelete();
+			}
+		} );
+		
+		
+		JPanel s = new JPanel();
+		
+		JButton requestButton11 = new JButton("Add Transporter");
+		requestButton10.addActionListener( new ActionListener() {
+			public void actionPerformed(ActionEvent ev) {
+				try {
+					myAgent.printAID();
+				}
+				catch (Exception e) {
+					JOptionPane.showMessageDialog(WarehouseGui.this, "Invalid values. "+e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
+				}
+			}
+		} );
+		
+		s.add(requestButton11);
+		
+
+		setResizable(false);
+		
+	}
+	
+	public void showGui() {
+		pack();
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		int centerX = (int)screenSize.getWidth() / 2;
+		int centerY = (int)screenSize.getHeight() / 2;
+		setLocation(centerX - getWidth() / 2, centerY - getHeight() / 2);
+		super.setVisible(true);
+	}	
+}

@@ -1,0 +1,7 @@
+1560445071498	Rename type 'TravelToStart'
+1560535965558	Rename type 'WorkOrderToShelf'
+1560700224363	Rename type 'ChargeStation'
+1560700388599	Rename type 'ChargeStationInfo'
+1560700468468	Rename type 'AddNewChargeStation'
+1560700555918	Rename field 'rqstCharge'
+1560706095134	Rename field 'chargeInfo'

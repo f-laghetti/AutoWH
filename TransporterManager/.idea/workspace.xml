@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="3e2e17d9-5043-4c4b-815a-dc04bdaab387" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectId" id="1YrKHRoBgPRbZ1JdroacgAUq344" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/Server" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Transporter" />
+      <recent name="$PROJECT_DIR$/Server" />
+      <recent name="$PROJECT_DIR$/testServer" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Server" />
+      <recent name="$PROJECT_DIR$/test" />
+      <recent name="$PROJECT_DIR$/PathCalculator" />
+      <recent name="$PROJECT_DIR$/Space" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.TestServer">
+    <configuration name="TestServer" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PythonServer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Server" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Server/TestServer.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="prova_invio_POST" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PythonServer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/prova_invio_POST.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="prova_thread2" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PythonServer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/prova_thread2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="prova_thread3" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PythonServer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/prova_thread3.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="tests" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="PythonServer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/tests.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.TestServer" />
+        <item itemvalue="Python.prova_invio_POST" />
+        <item itemvalue="Python.prova_thread3" />
+        <item itemvalue="Python.prova_thread2" />
+        <item itemvalue="Python.tests" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3e2e17d9-5043-4c4b-815a-dc04bdaab387" name="Default Changelist" comment="" />
+      <created>1583695184973</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1583695184973</updated>
+      <workItem from="1583695187969" duration="869000" />
+      <workItem from="1583765634188" duration="5466000" />
+      <workItem from="1583776958018" duration="18397000" />
+      <workItem from="1583850754864" duration="2441000" />
+      <workItem from="1584011214639" duration="2491000" />
+      <workItem from="1584110764007" duration="34000" />
+      <workItem from="1585325334676" duration="13483000" />
+      <workItem from="1585415373612" duration="9628000" />
+      <workItem from="1585492288710" duration="24817000" />
+      <workItem from="1585548476640" duration="19132000" />
+      <workItem from="1585671909724" duration="32157000" />
+      <workItem from="1586209312950" duration="4801000" />
+      <workItem from="1586239867441" duration="1215000" />
+      <workItem from="1587632908071" duration="599000" />
+      <workItem from="1587727143553" duration="2913000" />
+      <workItem from="1590503589752" duration="9074000" />
+      <workItem from="1590523401627" duration="5545000" />
+      <workItem from="1590580347299" duration="9858000" />
+      <workItem from="1590669525549" duration="4504000" />
+      <workItem from="1590694810395" duration="2329000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="1240" y="311" width="424" height="491" key="FileChooserDialogImpl" timestamp="1585498517952">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state x="1240" y="311" width="424" height="491" key="FileChooserDialogImpl/70.27.1850.1053@70.27.1850.1053" timestamp="1585498517952" />
+    <state width="869" height="313" key="GridCell.Tab.0.bottom" timestamp="1590697685105">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state width="869" height="313" key="GridCell.Tab.0.bottom/70.27.1850.1053@70.27.1850.1053" timestamp="1590697685105" />
+    <state width="869" height="313" key="GridCell.Tab.0.center" timestamp="1590697685105">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state width="869" height="313" key="GridCell.Tab.0.center/70.27.1850.1053@70.27.1850.1053" timestamp="1590697685105" />
+    <state width="869" height="313" key="GridCell.Tab.0.left" timestamp="1590697685105">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state width="869" height="313" key="GridCell.Tab.0.left/70.27.1850.1053@70.27.1850.1053" timestamp="1590697685105" />
+    <state width="869" height="313" key="GridCell.Tab.0.right" timestamp="1590697685105">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state width="869" height="313" key="GridCell.Tab.0.right/70.27.1850.1053@70.27.1850.1053" timestamp="1590697685105" />
+    <state x="1108" y="381" key="com.intellij.ide.util.TipDialog" timestamp="1590694811316">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state x="1108" y="381" key="com.intellij.ide.util.TipDialog/70.27.1850.1053@70.27.1850.1053" timestamp="1590694811316" />
+    <state x="577" y="283" width="707" height="526" key="find.popup" timestamp="1590523521168">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state x="577" y="283" width="707" height="526" key="find.popup/70.27.1850.1053@70.27.1850.1053" timestamp="1590523521168" />
+    <state x="1121" y="196" width="672" height="676" key="search.everywhere.popup" timestamp="1590681257211">
+      <screen x="70" y="27" width="1850" height="1053" />
+    </state>
+    <state x="1121" y="196" width="672" height="676" key="search.everywhere.popup/70.27.1850.1053@70.27.1850.1053" timestamp="1590681257211" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/PythonServer$SumChoice__1_.coverage" NAME="SumChoice (1) Coverage Results" MODIFIED="1585493082722" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/PathCalculators" />
+    <SUITE FILE_PATH="coverage/PythonServer$prova_thread.coverage" NAME="prova_thread Coverage Results" MODIFIED="1585566900038" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/PythonServer$tests.coverage" NAME="tests Coverage Results" MODIFIED="1585679283633" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/PythonServer$PathCalculator__1_.coverage" NAME="PathCalculator (1) Coverage Results" MODIFIED="1585493486277" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/PathCalculators" />
+    <SUITE FILE_PATH="coverage/PythonServer$prova_thread3.coverage" NAME="prova_thread3 Coverage Results" MODIFIED="1585681408398" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/PythonServer$SumChoice.coverage" NAME="SumChoice Coverage Results" MODIFIED="1585418768755" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/PathCalculator" />
+    <SUITE FILE_PATH="coverage/PythonServer$TestServer.coverage" NAME="TestServer Coverage Results" MODIFIED="1590697134503" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Server" />
+    <SUITE FILE_PATH="coverage/PythonServer$prova_invio_POST.coverage" NAME="prova_invio_POST Coverage Results" MODIFIED="1590506681446" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/PythonServer$server4.coverage" NAME="server4 Coverage Results" MODIFIED="1583769087154" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$server.coverage" NAME="server Coverage Results" MODIFIED="1583766606439" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$overdrive.coverage" NAME="overdrive Coverage Results" MODIFIED="1583812638996" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$prova_thread2.coverage" NAME="prova_thread2 Coverage Results" MODIFIED="1585680656340" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/PythonServer$server2.coverage" NAME="server2 Coverage Results" MODIFIED="1583769170548" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$TransporterManager.coverage" NAME="TransporterManager Coverage Results" MODIFIED="1585358809440" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$server3.coverage" NAME="server3 Coverage Results" MODIFIED="1583783340746" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonServer$PathCalculator.coverage" NAME="PathCalculator Coverage Results" MODIFIED="1585421248736" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/PathCalculator" />
+  </component>
+</project>
